@@ -1,331 +1,747 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="utf-8">
-  <title>อเวคเคนนิ่ง: ร่างสถิตเทพ (Full-Body Aura & Infinite Range)</title>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/holistic/holistic.js" crossorigin="anonymous"></script>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Prompt:wght@500;700&display=swap');
-    
-    body { 
-      display: flex; justify-content: center; align-items: center; height: 100vh; 
-      background-color: #020202; margin: 0; overflow: hidden; font-family: 'Prompt', sans-serif;
-    }
-    #canvas_container { 
-      position: relative; border-radius: 15px; overflow: hidden;
-      box-shadow: 0 0 80px rgba(0, 0, 0, 1);
-    }
-    canvas { transform: scaleX(-1); border-radius: 15px; width: 800px; height: 600px; background-color: #000; }
-    
-    #ui_panel {
-      position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-      display: flex; gap: 20px; z-index: 10;
-    }
-    button {
-      background: rgba(15, 15, 15, 0.8); color: #fff; border: 2px solid transparent;
-      padding: 10px 25px; border-radius: 30px; font-size: 16px; font-weight: bold;
-      cursor: pointer; transition: all 0.3s; backdrop-filter: blur(8px);
-    }
-    button:hover { transform: scale(1.05); }
-    
-    .btn-magic.active { border-color: #ff1177; box-shadow: 0 0 30px #ff1177; color: #ff99bb; }
-    .btn-scifi.active { border-color: #00eeff; box-shadow: 0 0 30px #00eeff; color: #ccffff; font-family: 'Orbitron', sans-serif; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate Anime Energy AR</title>
+    <style>
+        body {
+            margin: 0; overflow: hidden; background-color: #050505;
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: white;
+        }
+        .container { position: relative; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; }
+        video { display: none; }
+        canvas { transform: scaleX(-1); width: 100%; height: 100%; object-fit: cover; }
+        
+        .ui-overlay {
+            position: absolute; top: 20px; left: 20px; z-index: 10; pointer-events: none;
+            transition: all 0.3s ease; background: rgba(0, 0, 0, 0.75); padding: 15px 25px;
+            border-radius: 12px; border-left: 5px solid currentColor; backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+        }
+        h2 { margin: 0 0 5px 0; font-size: 22px; text-transform: uppercase; letter-spacing: 2px;}
+        p { margin: 0; font-size: 14px; opacity: 0.9; }
+        
+        #loading {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 24px; font-weight: bold; text-align: center; z-index: 20;
+            color: #00ffff; text-shadow: 0 0 10px #00ffff;
+            background: rgba(0,0,0,0.8); padding: 20px 40px; border-radius: 10px;
+        }
+        
+        .mode-standby { color: #aaaaaa; border-color: #aaaaaa; text-shadow: none; }
+        .mode-normal { color: #00d2ff; text-shadow: 0 0 15px #00d2ff; border-color: #00d2ff; }
+        .mode-fusion { color: #ff1a1a; text-shadow: 0 0 20px #ff0000; border-color: #ff0000; }
+        .mode-pink { color: #ff69b4; text-shadow: 0 0 15px #ff1493; border-color: #ff69b4; }
+        .mode-purple { color: #b266ff; text-shadow: 0 0 15px #8a2be2; border-color: #b266ff; }
+        .mode-mixed { color: #f0f; text-shadow: 0 0 25px #ff00ff; border-color: #f0f; }
+        .mode-chidori { color: #00ffff; text-shadow: 0 0 25px #00ffff; border-color: #00ffff; }
+        .mode-lightning-fusion { color: #e6ffff; text-shadow: 0 0 30px #0088ff, 0 0 10px #ffffff; border-color: #0088ff; }
+        .mode-blackflash { color: #ff0000; text-shadow: 0 0 30px #ff0000, 0 0 10px #000; border-color: #000; background: rgba(50, 0, 0, 0.9); }
+        
+        .mode-tempest { color: #00ffcc; text-shadow: 0 0 25px #00ffcc, 0 0 10px #fff; border-color: #00ffcc; }
+        .mode-void { color: #cc00ff; text-shadow: 0 0 30px #4b0082, 0 0 15px #000; border-color: #4b0082; background: rgba(20, 0, 30, 0.8); }
+        .mode-cosmic { color: #ff00ff; text-shadow: 0 0 20px #ff00ff, 0 0 20px #00ffff; border-color: #ff00ff; border-right: 5px solid #00ffff; }
 
-    .shaking { animation: shake 0.1s infinite cubic-bezier(.36,.07,.19,.97) both; }
-    @keyframes shake {
-      0% { transform: translate(0, 0) scaleX(-1); }
-      25% { transform: translate(6px, 6px) scaleX(-1); }
-      50% { transform: translate(-6px, -6px) scaleX(-1); }
-      75% { transform: translate(6px, -6px) scaleX(-1); }
-      100% { transform: translate(-6px, 6px) scaleX(-1); }
-    }
-  </style>
+        #flash-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: white; opacity: 0; pointer-events: none; transition: opacity 0.05s ease-out; z-index: 5; }
+
+        @keyframes shake {
+            0% { transform: translate(3px, 3px) rotate(0deg); }
+            20% { transform: translate(-4px, 0px) rotate(1deg); }
+            40% { transform: translate(2px, -2px) rotate(1deg); }
+            60% { transform: translate(-4px, 2px) rotate(0deg); }
+            80% { transform: translate(-2px, -2px) rotate(1deg); }
+            100% { transform: translate(2px, -3px) rotate(-1deg); }
+        }
+        .shake-active { animation: shake 0.2s infinite cubic-bezier(.36,.07,.19,.97) both; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 </head>
 <body>
 
-  <div id="canvas_container">
-    <div id="ui_panel">
-      <button id="btn_magic" class="btn-magic active">🔥 จอมมารยักษา</button>
-      <button id="btn_scifi" class="btn-scifi">🌌 ไซบอร์กเทวะ</button>
-    </div>
-    <video class="input_video" style="display: none;"></video>
-    <canvas class="output_canvas" width="800" height="600"></canvas>
-  </div>
+<div id="loading">เชื่อมต่อพลังงาน... กำลังโหลด AI AR<br><span style="font-size: 14px; color:#aaa;">(กรุณาเปิดกล้องและรอสักครู่)</span></div>
+<div id="flash-overlay"></div>
 
-  <script>
-    const videoElement = document.querySelector('.input_video');
-    const canvasElement = document.querySelector('.output_canvas');
+<div class="ui-overlay mode-standby" id="ui" style="display: none;">
+    <h2 id="mode-title">SYSTEM: STANDBY</h2>
+    <p id="status-text">สถานะ: รอตรวจจับพลังงาน</p>
+</div>
+
+<div class="container" id="main-container">
+    <video id="input_video" autoplay playsinline></video>
+    <canvas id="output_canvas"></canvas>
+</div>
+
+<script>
+    const videoElement = document.getElementById('input_video');
+    const canvasElement = document.getElementById('output_canvas');
     const canvasCtx = canvasElement.getContext('2d', { alpha: false });
     
-    let currentMode = 'MAGIC'; 
-    document.getElementById('btn_magic').addEventListener('click', () => { currentMode = 'MAGIC'; document.getElementById('btn_magic').classList.add('active'); document.getElementById('btn_scifi').classList.remove('active'); });
-    document.getElementById('btn_scifi').addEventListener('click', () => { currentMode = 'SCIFI'; document.getElementById('btn_scifi').classList.add('active'); document.getElementById('btn_magic').classList.remove('active'); });
+    const uiOverlay = document.getElementById('ui');
+    const modeTitle = document.getElementById('mode-title');
+    const statusText = document.getElementById('status-text');
+    const flashOverlay = document.getElementById('flash-overlay');
+    const mainContainer = document.getElementById('main-container');
 
-    let time = 0;
+    // ตัวแปรระบบ
     let particles = [];
+    let shockwaves = [];
+    let cosmicStars = [];
+    
+    let rotation = 0;
+    let indexRotation = 0;
+    let purpleRotation = 0;
+    
+    // สถานะโหมดผสานพลัง
+    let isFusionState = false;      // วงจักรแดง
+    let isPurpleState = false;      // มุเก็น
+    let isLightningState = false;   // ผสานสายฟ้าใหม่
+    
+    // สถานะพลังลูกผสม (ใหม่!)
+    let isTempestState = false;     // พายุวงจักรสายฟ้า (แบมือ + 2 นิ้ว)
+    let isVoidState = false;        // หลุมดำมิติ (แบมือ + 1 นิ้ว)
+    let isCosmicState = false;      // สายฟ้าจักรวาล (2 นิ้ว + 1 นิ้ว)
+    
+    let lastToggleTime = 0;
+    let previousHandsPos = [];
+    let blackFlashFrames = 0;
+    let blackFlashPos = {x: 0, y: 0};
 
-    function getDistance(p1, p2) { return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2)); }
+    // ระบบควบคุมขนาดอัตโนมัติ
+    let currentSize = 50;
+    let targetSize = 50;
 
-    // ==========================================
-    // 🌪️ เอฟเฟกต์ออร่ารอบตัว (Full-Body Aura)
-    // ==========================================
-    function drawBodyAura(pose, w, h) {
-      if (!pose || !pose[11] || !pose[12] || !pose[23] || !pose[24]) return;
+    // ตากล้อง AI
+    let currentZoom = 1.0;
+    let targetZoom = 1.0;
+    let currentFocusX = 0, currentFocusY = 0;
+    let targetFocusX = 0, targetFocusY = 0;
 
-      // คำนวณจุดกึ่งกลางลำตัว
-      const centerX = (pose[11].x + pose[12].x + pose[23].x + pose[24].x) / 4 * w;
-      const centerY = (pose[11].y + pose[12].y + pose[23].y + pose[24].y) / 4 * h;
-      const bodyWidth = Math.abs(pose[11].x - pose[12].x) * w * 2.5; // กว้างกว่าตัวจริง
-      const bodyHeight = Math.abs(pose[11].y - pose[23].y) * h * 2.5;
-
-      canvasCtx.save();
-      canvasCtx.translate(centerX, centerY);
-
-      if (currentMode === 'MAGIC') {
-        // ออร่าพลังเวทย์พวยพุ่งขึ้นด้านบน
-        for (let i = 0; i < 10; i++) {
-          canvasCtx.beginPath();
-          const angle = (time * 0.1) + (i * Math.PI / 5);
-          const x = Math.cos(angle) * bodyWidth * 0.6;
-          const y = Math.sin(angle) * bodyHeight * 0.5 + (Math.sin(time * 0.5 + i) * 30);
-          
-          canvasCtx.moveTo(x, y + bodyHeight*0.5); // เริ่มจากด้านล่าง
-          // ลากเส้นโค้งพุ่งขึ้นไปข้างบนหัว
-          canvasCtx.quadraticCurveTo(x * 1.5, -bodyHeight * 0.5, x * 0.2, -bodyHeight * 1.5);
-          
-          canvasCtx.strokeStyle = `rgba(255, 17, 119, ${0.6 - (Math.sin(time * 0.3)*0.2)})`;
-          canvasCtx.lineWidth = 15 + Math.random() * 15;
-          canvasCtx.shadowColor = '#ff1177'; canvasCtx.shadowBlur = 40;
-          canvasCtx.stroke();
+    class Particle {
+        constructor(x, y, colorBase) {
+            this.x = x; this.y = y;
+            const angle = Math.random() * Math.PI * 2;
+            const speed = Math.random() * 8 + 2;
+            this.vx = Math.cos(angle) * speed; 
+            this.vy = Math.sin(angle) * speed;
+            this.life = 1.0;
+            this.size = Math.random() * 5 + 2;
+            this.colorBase = colorBase;
         }
-      } else {
-        // บาเรียหกเหลี่ยมและวงแหวนโฮโลแกรม
-        canvasCtx.rotate(time * 0.02);
+        update() { this.x += this.vx; this.y += this.vy; this.life -= 0.03; }
+        draw(ctx) {
+            ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.fillStyle = this.colorBase + this.life + ')'; ctx.fill();
+        }
+    }
+
+    class Shockwave {
+        constructor(x, y, maxSize, colorRGB) {
+            this.x = x; this.y = y; this.size = 0;
+            this.maxSize = maxSize;
+            this.alpha = 1.0; this.colorRGB = colorRGB;
+        }
+        update() { this.size += 40; this.alpha -= 0.05; }
+        draw(ctx) {
+            ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(${this.colorRGB}, ${this.alpha})`;
+            ctx.lineWidth = 20 * this.alpha; ctx.stroke();
+        }
+    }
+
+    function initCosmicStars() {
+        cosmicStars = [];
+        const w = window.innerWidth * 2, h = window.innerHeight * 2;
+        for(let i=0; i<300; i++) {
+            cosmicStars.push({
+                x: (Math.random() - 0.5) * w, y: (Math.random() - 0.5) * h,
+                size: Math.random() * 2.5 + 0.5,
+                color: Math.random() > 0.8 ? '#e6e6ff' : Math.random() > 0.8 ? '#ffb3ff' : '#ffffff'
+            });
+        }
+    }
+
+    function setUI(modeClass, title, status) {
+        if (uiOverlay.className !== `ui-overlay ${modeClass}` || modeTitle.innerText !== title || statusText.innerText !== status) {
+            uiOverlay.className = `ui-overlay ${modeClass}`;
+            modeTitle.innerText = title;
+            statusText.innerText = status;
+        }
+    }
+
+    function getHandOpenness(landmarks) {
+        const d12 = Math.hypot(landmarks[12].x - landmarks[0].x, landmarks[12].y - landmarks[0].y);
+        const d9 = Math.hypot(landmarks[9].x - landmarks[0].x, landmarks[9].y - landmarks[0].y);
+        let ratio = d12 / d9;
+        let openness = (ratio - 1.0) / 1.3; 
+        return Math.max(0, Math.min(1, openness));
+    }
+
+    function isFingerExtended(landmarks, tipIdx, mcpIdx) {
+        const wrist = landmarks[0];
+        const tipDist = Math.hypot(landmarks[tipIdx].x - wrist.x, landmarks[tipIdx].y - wrist.y);
+        const mcpDist = Math.hypot(landmarks[mcpIdx].x - wrist.x, landmarks[mcpIdx].y - wrist.y);
+        return tipDist > mcpDist * 1.25;
+    }
+
+    function getGesture(landmarks) {
+        const indexUp = isFingerExtended(landmarks, 8, 5);
+        const middleUp = isFingerExtended(landmarks, 12, 9);
+        const ringUp = isFingerExtended(landmarks, 16, 13);
+        const pinkyUp = isFingerExtended(landmarks, 20, 17);
+
+        if (indexUp && middleUp && !ringUp && !pinkyUp) return 'SWORD';
+        if (indexUp && !middleUp && !ringUp && !pinkyUp) return 'INDEX';
+        if (!indexUp && !middleUp && !ringUp && !pinkyUp) return 'FIST';
+        if (indexUp && middleUp && ringUp && pinkyUp) return 'OPEN';
+        return 'UNKNOWN';
+    }
+
+    // --- EFFECT DRAWING FUNCTIONS ---
+
+    function drawRasengan(ctx, x, y, size, isFusion, openVal = 1.0) {
+        rotation += isFusion ? (0.3 + (1.0 - openVal) * 0.8) : 0.2;
+        ctx.save(); ctx.translate(x, y);
+        ctx.globalCompositeOperation = 'screen';
         
-        // วงแหวนป้องกัน 3 ชั้น
-        for(let j=1; j<=3; j++) {
-            canvasCtx.beginPath();
-            canvasCtx.arc(0, 0, bodyWidth * 0.4 * j, 0, Math.PI * 2);
-            canvasCtx.strokeStyle = `rgba(0, 238, 255, ${0.4 / j})`;
-            canvasCtx.lineWidth = 10 / j;
-            canvasCtx.setLineDash(j%2===0 ? [20, 15] : [5, 20]);
-            canvasCtx.stroke();
+        const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, size * 2.5);
+        if (isFusion) {
+            let coreAlpha = 0.6 + (1.0 - openVal) * 0.4;
+            gradient.addColorStop(0, `rgba(255, 30, 30, ${coreAlpha})`); 
+            gradient.addColorStop(0.4, 'rgba(255, 0, 0, 0.4)'); 
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        } else {
+            gradient.addColorStop(0, 'rgba(100, 200, 255, 0.7)'); 
+            gradient.addColorStop(0.5, 'rgba(0, 150, 255, 0.2)'); 
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
         }
-        canvasCtx.setLineDash([]);
+        ctx.fillStyle = gradient; ctx.beginPath(); ctx.arc(0, 0, size * 2.5, 0, Math.PI * 2); ctx.fill();
 
-        // เกราะหกเหลี่ยม (Hexagon Shield)
-        canvasCtx.rotate(-time * 0.04);
-        canvasCtx.beginPath();
-        for (let i = 0; i <= 6; i++) {
-          const angle = i * Math.PI / 3;
-          const x = Math.cos(angle) * bodyWidth * 0.8;
-          const y = Math.sin(angle) * bodyWidth * 0.8;
-          if (i === 0) canvasCtx.moveTo(x, y);
-          else canvasCtx.lineTo(x, y);
+        const swirlCount = isFusion ? 14 : 8;
+        for (let i = 0; i < swirlCount; i++) {
+            ctx.rotate(rotation + (i * Math.PI / (swirlCount/2)));
+            ctx.beginPath(); ctx.ellipse(0, 0, size * 1.3, size * 0.4, 0, 0, Math.PI * 2);
+            ctx.strokeStyle = isFusion ? `rgba(255, 50, 50, ${0.6 + Math.random() * 0.4})` : 'rgba(200, 255, 255, 0.6)';
+            ctx.lineWidth = isFusion ? (openVal < 0.3 ? 8 : 4) : 2;
+            ctx.stroke();
         }
-        canvasCtx.strokeStyle = 'rgba(0, 238, 255, 0.6)';
-        canvasCtx.lineWidth = 6;
-        canvasCtx.shadowColor = '#00eeff'; canvasCtx.shadowBlur = 30;
-        canvasCtx.stroke();
-      }
-      canvasCtx.restore();
+
+        ctx.beginPath(); ctx.arc(0, 0, size * 0.5, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff'; ctx.shadowBlur = 40; ctx.shadowColor = isFusion ? '#ff0000' : '#00ffff'; ctx.fill();
+        ctx.restore();
+        
+        let particleChance = isFusion ? (0.3 + (1.0 - openVal)*0.5) : 0.3;
+        if(Math.random() < particleChance) particles.push(new Particle(x + (Math.random()-0.5)*size, y + (Math.random()-0.5)*size, isFusion ? 'rgba(255, 0, 0,' : 'rgba(0, 255, 255,'));
     }
 
-    // ==========================================
-    // ✨ เอฟเฟกต์อาวุธต่างๆ
-    // ==========================================
-    function drawComplexArray(size, isMagic) {
-      canvasCtx.lineWidth = 2;
-      canvasCtx.strokeStyle = isMagic ? 'rgba(255, 17, 119, 0.6)' : 'rgba(0, 238, 255, 0.6)';
-      canvasCtx.beginPath(); canvasCtx.arc(0, 0, size * 1.5, 0, Math.PI * 2); canvasCtx.stroke();
-      canvasCtx.beginPath(); canvasCtx.arc(0, 0, size * 1.6, 0, Math.PI * 2); canvasCtx.setLineDash([10, 15]); canvasCtx.stroke(); canvasCtx.setLineDash([]);
+    function drawHollowPurple(ctx, x, y, size, openVal) {
+        purpleRotation += 0.1 + ((1.0 - openVal) * 1.5);
+        ctx.save(); ctx.translate(x, y);
+        
+        // วาดเงาดำก่อน (ต้องใช้ source-over)
+        ctx.globalCompositeOperation = 'source-over';
+        if (openVal < 0.6) {
+            const darkGrd = ctx.createRadialGradient(0, 0, 0, 0, 0, size * 6);
+            darkGrd.addColorStop(0, `rgba(0, 0, 0, ${0.9 - openVal})`);
+            darkGrd.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = darkGrd;
+            ctx.beginPath(); ctx.arc(0, 0, size * 6, 0, Math.PI * 2); ctx.fill();
+        }
 
-      if (isMagic) {
-        for(let i = 0; i < 8; i++) {
-          canvasCtx.rotate(Math.PI / 4);
-          canvasCtx.beginPath(); canvasCtx.moveTo(0, size * 1.5); canvasCtx.lineTo(size * 0.4, size * 0.4); canvasCtx.stroke();
+        // เปลี่ยนเป็น Screen สำหรับแสง
+        ctx.globalCompositeOperation = 'screen';
+        const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, size * 3);
+        if (openVal < 0.3) {
+            gradient.addColorStop(0, 'rgba(0, 0, 0, 1)'); 
+            gradient.addColorStop(0.2, 'rgba(150, 0, 255, 1)'); 
+            gradient.addColorStop(0.5, 'rgba(255, 0, 150, 0.5)'); 
+        } else {
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 1)'); 
+            gradient.addColorStop(0.3, 'rgba(200, 50, 255, 0.8)'); 
+            gradient.addColorStop(0.7, 'rgba(100, 0, 255, 0.4)'); 
         }
-      } else {
-        for(let i = 0; i < 6; i++) {
-          canvasCtx.rotate(Math.PI / 3);
-          canvasCtx.strokeRect(-size*0.8, -size*0.8, size*1.6, size*1.6);
+        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        
+        ctx.fillStyle = gradient; ctx.beginPath(); ctx.arc(0, 0, size * 3, 0, Math.PI * 2); ctx.fill();
+
+        const swirlCount = 6;
+        for (let i = 0; i < swirlCount; i++) {
+            ctx.rotate(purpleRotation + (i * Math.PI / (swirlCount/2)));
+            ctx.beginPath(); ctx.ellipse(0, 0, size * 1.8, size * 0.4, 0, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(255, 50, 200, ${0.5 + Math.random() * 0.5})`;
+            ctx.lineWidth = openVal < 0.3 ? 12 : 4; 
+            ctx.stroke();
         }
-      }
+
+        if (openVal < 0.4 && Math.random() > 0.4) {
+            ctx.beginPath(); ctx.moveTo(0, 0);
+            let lx = 0, ly = 0;
+            for(let j=0; j<5; j++) { lx += (Math.random() - 0.5) * size*4; ly += (Math.random() - 0.5) * size*4; ctx.lineTo(lx, ly); }
+            ctx.strokeStyle = Math.random() > 0.5 ? '#000000' : '#ff00ff'; 
+            ctx.lineWidth = 4 + Math.random()*6; ctx.stroke();
+        }
+
+        ctx.beginPath(); ctx.arc(0, 0, size * (openVal < 0.3 ? 0.8 : 0.4), 0, Math.PI * 2);
+        ctx.fillStyle = openVal < 0.3 ? '#000000' : '#ffffff'; 
+        ctx.shadowBlur = 50; ctx.shadowColor = '#cc00ff'; ctx.fill();
+        ctx.restore();
+
+        if(Math.random() < 0.5) particles.push(new Particle(x + (Math.random()-0.5)*size*2, y + (Math.random()-0.5)*size*2, 'rgba(200, 50, 255,'));
     }
 
-    function drawEnergyVortex(x, y, size) {
-      canvasCtx.save(); canvasCtx.translate(x, y);
-      const isMagic = currentMode === 'MAGIC';
-      const coreColor = isMagic ? '#ff1177' : '#00eeff';
+    function drawLightningFusion(ctx, x, y, size, openVal) {
+        ctx.save(); ctx.translate(x, y);
+        ctx.globalCompositeOperation = 'screen';
+        
+        // แกนกลางสายฟ้า
+        ctx.beginPath(); ctx.arc(0, 0, size * 0.8, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff'; ctx.shadowBlur = openVal < 0.3 ? 80 : 40; ctx.shadowColor = '#0088ff'; ctx.fill();
 
-      canvasCtx.save(); canvasCtx.rotate(time * 0.02); drawComplexArray(size, isMagic); canvasCtx.restore();
-      canvasCtx.save(); canvasCtx.rotate(-time * 0.03); drawComplexArray(size * 0.7, isMagic); canvasCtx.restore();
+        // ยิ่งกำมือ สายฟ้าจะเกาะตัวหนาแน่นตรงกลาง
+        const boltCount = openVal > 0.8 ? 12 : (openVal < 0.3 ? 20 : 8);
+        const spread = openVal > 0.8 ? size * 5 : size * 1.5;
 
-      const grad = canvasCtx.createRadialGradient(0,0,0, 0,0,size * 1.2);
-      grad.addColorStop(0, '#ffffff'); grad.addColorStop(0.2, coreColor); grad.addColorStop(0.6, 'transparent');
-      canvasCtx.fillStyle = grad; canvasCtx.beginPath(); canvasCtx.arc(0, 0, size * 1.2, 0, Math.PI*2); canvasCtx.fill();
-
-      for(let j=0; j<5; j++) {
-        canvasCtx.rotate(Math.PI * 2 / 5);
-        canvasCtx.beginPath(); canvasCtx.moveTo(0, 0);
-        let px = 0, py = 0;
-        for(let k=0; k<6; k++) {
-          px += (Math.random()*size*0.4 + 5); py += (Math.random()-0.5)*size*0.5;
-          canvasCtx.lineTo(px, py);
+        for(let i=0; i<boltCount; i++) {
+            ctx.beginPath(); ctx.moveTo(0, 0);
+            let lx = 0, ly = 0;
+            ctx.rotate(Math.random() * Math.PI * 2);
+            for(let j=0; j<8; j++) { 
+                lx += (Math.random() - 0.2) * spread * 0.3; 
+                ly += (Math.random() - 0.5) * spread * 0.3; 
+                ctx.lineTo(lx, ly); 
+            }
+            ctx.strokeStyle = Math.random() > 0.6 ? '#ffffff' : '#00ffff'; 
+            ctx.lineWidth = openVal < 0.3 ? Math.random() * 8 + 2 : Math.random() * 4 + 1; 
+            ctx.stroke();
+            
+            if (openVal > 0.8 && Math.random() > 0.5) {
+                particles.push(new Particle(x + lx, y + ly, 'rgba(0, 255, 255,'));
+            }
         }
-        canvasCtx.strokeStyle = '#ffffff'; canvasCtx.lineWidth = 3; canvasCtx.stroke();
-      }
-      canvasCtx.restore();
+        ctx.restore();
     }
 
-    function drawEpicLightning(p1, p2, thicknessBase = 4) {
-      const isMagic = currentMode === 'MAGIC';
-      canvasCtx.save();
-      const dist = getDistance(p1, p2);
-      const dynamicThickness = thicknessBase + (dist / 80); // สายฟ้ายิ่งไกลยิ่งอลังการ
-
-      for (let b = 0; b < 4; b++) {
-        canvasCtx.beginPath(); canvasCtx.moveTo(p1.x, p1.y);
-        const steps = 20;
-        for (let i = 1; i < steps; i++) {
-          const tx = p1.x + (p2.x - p1.x) * (i/steps); const ty = p1.y + (p2.y - p1.y) * (i/steps);
-          const offset = (Math.random() - 0.5) * (dist * 0.15); 
-          canvasCtx.lineTo(tx + offset, ty + offset);
+    function drawIndexEnergy(ctx, x, y, size, colorType) {
+        indexRotation += 0.2;
+        let glowRGB = colorType === 'pink' ? '255, 50, 150' : colorType === 'purple' ? '150, 50, 255' : '255, 0, 255';
+        ctx.save(); ctx.translate(x, y); ctx.globalCompositeOperation = 'screen';
+        let auraGrad = ctx.createRadialGradient(0, 0, size*0.1, 0, 0, size * 3.5);
+        auraGrad.addColorStop(0, `rgba(${glowRGB}, 1)`); auraGrad.addColorStop(0.3, `rgba(${glowRGB}, 0.4)`); auraGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = auraGrad; ctx.beginPath(); ctx.arc(0, 0, size * 3.5, 0, Math.PI * 2); ctx.fill();
+        for(let i=0; i<4; i++) {
+            ctx.rotate(indexRotation * (i%2==0?1:-1) + (i*Math.PI/2));
+            ctx.beginPath(); ctx.ellipse(0, 0, size * 1.8, size * 0.25, 0, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(${glowRGB}, 0.9)`; ctx.lineWidth = 4; ctx.stroke();
         }
-        canvasCtx.lineTo(p2.x, p2.y);
-        canvasCtx.strokeStyle = b===0 ? '#ffffff' : (isMagic ? '#ff1177' : '#00eeff'); 
-        canvasCtx.lineWidth = b===0 ? dynamicThickness * 0.5 : dynamicThickness;
-        canvasCtx.shadowColor = isMagic ? '#ff1177' : '#00eeff'; canvasCtx.shadowBlur = 40; canvasCtx.stroke();
-      }
-      canvasCtx.restore();
+        ctx.beginPath(); ctx.arc(0, 0, size * 0.7, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff'; ctx.shadowBlur = 50; ctx.shadowColor = `rgb(${glowRGB})`; ctx.fill();
+        ctx.restore();
     }
 
-    function fireMouthBeam(x, y) {
-      canvasElement.classList.add('shaking');
-      canvasCtx.save();
-      const isMagic = currentMode === 'MAGIC';
-      const w = 180 + Math.sin(time*0.8)*40; // ลำแสงใหญ่ขึ้น
-      
-      const grad = canvasCtx.createLinearGradient(x - w/2, 0, x + w/2, 0);
-      grad.addColorStop(0, 'transparent'); grad.addColorStop(0.2, isMagic ? '#aa0055' : '#0077ff'); 
-      grad.addColorStop(0.5, '#ffffff'); grad.addColorStop(0.8, isMagic ? '#aa0055' : '#0077ff'); grad.addColorStop(1, 'transparent');
-      
-      canvasCtx.fillStyle = grad; canvasCtx.shadowColor = isMagic ? '#ff1177' : '#00eeff'; canvasCtx.shadowBlur = 100;
-      canvasCtx.fillRect(x - w/2, 0, w, y);
-
-      canvasCtx.beginPath();
-      for(let i = 0; i < y; i+=10) {
-        const spiralX = x + Math.sin(i * 0.05 + time * 0.3) * (w * 0.7);
-        if(i===0) canvasCtx.moveTo(spiralX, y - i); else canvasCtx.lineTo(spiralX, y - i);
-      }
-      canvasCtx.strokeStyle = '#ffffff'; canvasCtx.lineWidth = 6; canvasCtx.stroke();
-      
-      canvasCtx.beginPath(); canvasCtx.arc(x, y, 100, 0, Math.PI*2);
-      canvasCtx.fillStyle = isMagic ? 'rgba(255, 17, 119, 0.9)' : 'rgba(0, 238, 255, 0.9)'; canvasCtx.fill();
-      canvasCtx.restore();
+    function drawBlackFlash(ctx, x, y) {
+        ctx.save(); ctx.translate(x, y);
+        const grad = ctx.createRadialGradient(0, 0, 10, 0, 0, 400);
+        grad.addColorStop(0, 'rgba(0, 0, 0, 1)'); grad.addColorStop(0.15, 'rgba(255, 0, 0, 0.9)'); grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(0, 0, 400, 0, Math.PI*2); ctx.fill();
+        ctx.globalCompositeOperation = 'screen';
+        for(let i=0; i<12; i++) {
+            ctx.rotate(Math.random() * Math.PI * 2); ctx.beginPath(); ctx.moveTo(0, 0);
+            let lx = 0, ly = 0;
+            for(let j=0; j<8; j++) { lx += (Math.random() - 0.5) * 300; ly += (Math.random() - 0.5) * 300; ctx.lineTo(lx, ly); }
+            ctx.strokeStyle = Math.random() > 0.3 ? '#000000' : '#ff1a1a'; ctx.lineWidth = Math.random() * 15 + 5; ctx.stroke();
+        }
+        ctx.restore();
     }
 
-    // ==========================================
-    // 🧠 เอนจิ้นประมวลผลหลัก
-    // ==========================================
-    function isIndexFingerUp(lm) { return lm[8].y < lm[6].y && lm[12].y > lm[10].y && lm[16].y > lm[14].y && lm[20].y > lm[18].y; }
+    function drawLightning(ctx, startX, startY) {
+        ctx.save(); ctx.globalCompositeOperation = 'screen'; ctx.shadowBlur = 20; ctx.shadowColor = '#00ffff';
+        const count = Math.floor(Math.random() * 4) + 4;
+        for(let i=0; i<count; i++) {
+            ctx.beginPath(); ctx.moveTo(startX, startY); let cx = startX, cy = startY;
+            for(let j=0; j<10; j++) { cx += (Math.random() - 0.5) * 400; cy += (Math.random() - 0.5) * 400 - 50; ctx.lineTo(cx, cy); }
+            ctx.lineWidth = Math.random() * 6 + 2; ctx.strokeStyle = Math.random() > 0.4 ? '#ffffff' : '#00ffff'; ctx.stroke();
+            if(Math.random()>0.3) particles.push(new Particle(cx, cy, 'rgba(150, 255, 255,'));
+        }
+        ctx.beginPath(); ctx.arc(startX, startY, 25 + Math.random()*20, 0, Math.PI*2); ctx.fillStyle = '#ffffff'; ctx.fill();
+        ctx.restore();
+    }
 
+    // --- NEW CROSS-FUSION EFFECTS ---
+    function drawTempest(ctx, x, y, size, openVal) {
+        rotation -= 0.4; // หมุนกลับด้านและเร็วขึ้น
+        ctx.save(); ctx.translate(x, y); ctx.globalCompositeOperation = 'screen';
+        
+        // แกนพายุ
+        let coreAlpha = openVal < 0.3 ? 1 : 0.7;
+        ctx.beginPath(); ctx.arc(0, 0, size * (openVal < 0.3 ? 1.5 : 2.5), 0, Math.PI * 2);
+        const grad = ctx.createRadialGradient(0,0,0, 0,0, size * 3);
+        grad.addColorStop(0, `rgba(255, 255, 255, ${coreAlpha})`);
+        grad.addColorStop(0.3, 'rgba(0, 255, 200, 0.6)');
+        grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = grad; ctx.fill();
+
+        // วงแหวนพายุ
+        for(let i=0; i<8; i++) {
+            ctx.rotate(rotation + (i * Math.PI / 4));
+            ctx.beginPath(); ctx.ellipse(0, 0, size * 2, size * 0.5, 0, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(0, 255, 255, ${0.4 + Math.random()*0.4})`;
+            ctx.lineWidth = openVal < 0.3 ? 8 : 3; ctx.stroke();
+        }
+
+        // สายฟ้าที่พุ่งออกจากลูกพายุ
+        const bolts = openVal > 0.8 ? 15 : 6;
+        const spread = openVal > 0.8 ? size * 4 : size * 1.5;
+        for(let i=0; i<bolts; i++) {
+            ctx.rotate(Math.random() * Math.PI * 2); ctx.beginPath(); ctx.moveTo(0,0);
+            let lx=0, ly=0;
+            for(let j=0; j<6; j++) { lx += (Math.random()-0.3)*spread*0.5; ly += (Math.random()-0.5)*spread*0.5; ctx.lineTo(lx,ly); }
+            ctx.strokeStyle = Math.random() > 0.5 ? '#ffffff' : '#00ffcc';
+            ctx.lineWidth = Math.random() * 4 + 1; ctx.stroke();
+        }
+        ctx.restore();
+        if(Math.random() < 0.6) particles.push(new Particle(x + (Math.random()-0.5)*size*2, y + (Math.random()-0.5)*size*2, 'rgba(0, 255, 200,'));
+    }
+
+    function drawVoid(ctx, x, y, size, openVal) {
+        purpleRotation -= 0.2;
+        ctx.save(); ctx.translate(x, y);
+        
+        // หลุมดำตรงกลาง (Source Over เพื่อบังแสง)
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.beginPath(); ctx.arc(0, 0, size * (openVal < 0.3 ? 0.5 : 1.5), 0, Math.PI * 2);
+        ctx.fillStyle = '#000000'; 
+        ctx.shadowBlur = openVal < 0.3 ? 50 : 20; ctx.shadowColor = '#4b0082'; ctx.fill();
+
+        // รังสีรอบนอก
+        ctx.globalCompositeOperation = 'screen';
+        for(let i=0; i<5; i++) {
+            ctx.rotate(purpleRotation + (i * Math.PI / 2.5));
+            ctx.beginPath(); ctx.ellipse(0, 0, size * 3, size * 0.3, 0, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(200, 0, 255, ${0.5 + Math.random()*0.3})`;
+            ctx.lineWidth = openVal < 0.3 ? 15 : 5; ctx.stroke();
+        }
+        
+        // ขอบฟ้าเหตุการณ์ (Event Horizon)
+        ctx.beginPath(); ctx.arc(0, 0, size * (openVal < 0.3 ? 0.6 : 1.6), 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(255, 0, 255, 0.8)'; ctx.lineWidth = 4; ctx.stroke();
+        
+        ctx.restore();
+        // ดูดอนุภาคเข้าหาตัว (อนุภาคสร้างรอบนอกแล้ววิ่งเข้า)
+        if(Math.random() < 0.8) {
+            let p = new Particle(x + (Math.random()-0.5)*size*6, y + (Math.random()-0.5)*size*6, 'rgba(150, 0, 255,');
+            p.vx = (x - p.x) * 0.05; p.vy = (y - p.y) * 0.05; // วิ่งเข้าศูนย์กลาง
+            particles.push(p);
+        }
+    }
+
+    function drawCosmic(ctx, x, y, size, openVal) {
+        ctx.save(); ctx.translate(x, y); ctx.globalCompositeOperation = 'screen';
+        
+        // แกนพลาสม่า
+        ctx.beginPath(); ctx.arc(0, 0, size * 1.2, 0, Math.PI * 2);
+        let grad = ctx.createRadialGradient(0,0,0, 0,0, size*2);
+        grad.addColorStop(0, '#ffffff'); grad.addColorStop(0.4, 'rgba(255, 0, 255, 0.8)'); grad.addColorStop(1, 'rgba(0, 255, 255, 0)');
+        ctx.fillStyle = grad; ctx.fill();
+
+        // สายฟ้า 2 สีพันกัน
+        const bolts = openVal > 0.8 ? 16 : 8;
+        const spread = openVal > 0.8 ? size * 5 : size * 2;
+        for(let i=0; i<bolts; i++) {
+            ctx.rotate(Math.random() * Math.PI * 2); ctx.beginPath(); ctx.moveTo(0,0);
+            let lx=0, ly=0;
+            for(let j=0; j<7; j++) { lx += (Math.random()-0.2)*spread*0.4; ly += (Math.random()-0.5)*spread*0.4; ctx.lineTo(lx,ly); }
+            // สลับสีฟ้ากับชมพู
+            ctx.strokeStyle = i % 2 === 0 ? '#00ffff' : '#ff00ff'; 
+            ctx.lineWidth = openVal < 0.3 ? Math.random()*10 + 3 : Math.random()*5 + 1; 
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+
+    // --- MAIN LOOP ---
     function onResults(results) {
-      time++; 
-      canvasCtx.save();
-      canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-      canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
-      canvasCtx.globalCompositeOperation = 'screen'; 
-      
-      const w = canvasElement.width; const h = canvasElement.height;
-      
-      // ตัวแปรเก็บสถานะว่ากำลังใช้พลังอยู่หรือไม่
-      let isActionActive = false; 
-      let activeActionType = null; // 'MOUTH', 'LASER', 'VORTEX'
+        const width = canvasElement.width;
+        const height = canvasElement.height;
+        let handsData = results.multiHandLandmarks || [];
+        const currentTime = Date.now();
+        flashOverlay.style.opacity = '0';
+        mainContainer.classList.remove('shake-active');
 
-      // ตรวจสอบเงื่อนไขการใช้พลังทั้งหมดก่อนวาด
-      // 1. ตรวจปาก
-      let mouthCenter = null;
-      if (results.faceLandmarks) {
-        const upperLip = { x: results.faceLandmarks[13].x * w, y: results.faceLandmarks[13].y * h };
-        const lowerLip = { x: results.faceLandmarks[14].x * w, y: results.faceLandmarks[14].y * h };
-        if (getDistance(upperLip, lowerLip) > 30) {
-          isActionActive = true; activeActionType = 'MOUTH';
-          mouthCenter = {x: (upperLip.x+lowerLip.x)/2, y: (upperLip.y+lowerLip.y)/2};
+        targetZoom = 1.0; targetFocusX = width / 2; targetFocusY = height / 2;
+
+        let gestures = handsData.map((lm, idx) => ({
+            landmarks: lm, type: getGesture(lm), label: results.multiHandedness[idx].label,
+            wrist: { x: lm[0].x * width, y: lm[0].y * height },
+            openness: getHandOpenness(lm) // 0-1
+        }));
+
+        let isDoingBlackFlash = false;
+
+        // --- ระบบเช็คการผสานพลัง (ชนมือ 2 ข้าง) ---
+        if (gestures.length === 2) {
+            // แก้ไข: วัดระยะห่างทั้งที่ "ฝ่ามือ" และ "ปลายนิ้วชี้"
+            const palmDist = Math.hypot(gestures[0].landmarks[9].x - gestures[1].landmarks[9].x, gestures[0].landmarks[9].y - gestures[1].landmarks[9].y);
+            const indexTipDist = Math.hypot(gestures[0].landmarks[8].x - gestures[1].landmarks[8].x, gestures[0].landmarks[8].y - gestures[1].landmarks[8].y);
+            
+            // ให้เงื่อนไขง่ายขึ้น: แค่ปลายนิ้วชี้เข้าใกล้กัน (ระยะห่างน้อยกว่า 20% ของจอ) ก็ทำงานได้เลย
+            if ((palmDist < 0.15 || indexTipDist < 0.2) && (currentTime - lastToggleTime) > 1000) {
+                
+                // ฟังก์ชั่นเคลียร์โหมดทั้งหมด
+                const resetModes = () => { 
+                    isFusionState = false; isPurpleState = false; isLightningState = false; 
+                    isTempestState = false; isVoidState = false; isCosmicState = false; 
+                };
+
+                const type1 = gestures[0].type;
+                const type2 = gestures[1].type;
+                const hasTypes = (t1, t2) => (type1 === t1 && type2 === t2) || (type1 === t2 && type2 === t1);
+
+                // 1. ท่าเหมือนกัน (ท่าดั้งเดิม)
+                if (type1 === type2) {
+                    if (type1 === 'OPEN') {
+                        let willTurnOn = !isFusionState; resetModes(); isFusionState = willTurnOn; lastToggleTime = currentTime;
+                        if(isFusionState) shockwaves.push(new Shockwave(gestures[0].landmarks[9].x * width, gestures[0].landmarks[9].y * height, width*0.5, '255, 0, 0'));
+                    }
+                    else if (type1 === 'INDEX') {
+                        let willTurnOn = !isPurpleState; resetModes(); isPurpleState = willTurnOn; lastToggleTime = currentTime;
+                        if(isPurpleState) shockwaves.push(new Shockwave(gestures[0].landmarks[9].x * width, gestures[0].landmarks[9].y * height, width*0.7, '200, 50, 255'));
+                    }
+                    else if (type1 === 'SWORD') {
+                        let willTurnOn = !isLightningState; resetModes(); isLightningState = willTurnOn; lastToggleTime = currentTime;
+                        if(isLightningState) shockwaves.push(new Shockwave(gestures[0].landmarks[9].x * width, gestures[0].landmarks[9].y * height, width*0.6, '0, 255, 255'));
+                    }
+                }
+                // 2. ท่าลูกผสม (ใหม่!)
+                else {
+                    // แบมือ + 2 นิ้ว = พายุวงจักรสายฟ้า (Tempest)
+                    if (hasTypes('OPEN', 'SWORD')) {
+                        let willTurnOn = !isTempestState; resetModes(); isTempestState = willTurnOn; lastToggleTime = currentTime;
+                        if(isTempestState) shockwaves.push(new Shockwave(gestures[0].landmarks[9].x * width, gestures[0].landmarks[9].y * height, width*0.6, '0, 255, 204'));
+                    }
+                    // แบมือ + 1 นิ้ว = หลุมดำสูญญากาศ (Void)
+                    else if (hasTypes('OPEN', 'INDEX')) {
+                        let willTurnOn = !isVoidState; resetModes(); isVoidState = willTurnOn; lastToggleTime = currentTime;
+                        if(isVoidState) shockwaves.push(new Shockwave(gestures[0].landmarks[9].x * width, gestures[0].landmarks[9].y * height, width*0.8, '75, 0, 130'));
+                    }
+                    // 2 นิ้ว + 1 นิ้ว = อสนีบาตพลาสม่า (Cosmic)
+                    else if (hasTypes('SWORD', 'INDEX')) {
+                        let willTurnOn = !isCosmicState; resetModes(); isCosmicState = willTurnOn; lastToggleTime = currentTime;
+                        if(isCosmicState) shockwaves.push(new Shockwave(gestures[0].landmarks[9].x * width, gestures[0].landmarks[9].y * height, width*0.6, '255, 0, 255'));
+                    }
+                }
+            }
         }
-      }
 
-      // 2. ตรวจมือ
-      let lTip = null, rTip = null, lPalm = null, rPalm = null;
-      let lHand = results.leftHandLandmarks, rHand = results.rightHandLandmarks;
-      if (lHand) { lTip = {x: lHand[8].x*w, y: lHand[8].y*h}; lPalm = {x: lHand[9].x*w, y: lHand[9].y*h}; }
-      if (rHand) { rTip = {x: rHand[8].x*w, y: rHand[8].y*h}; rPalm = {x: rHand[9].x*w, y: rHand[9].y*h}; }
-
-      let lUp = lHand && isIndexFingerUp(lHand); let rUp = rHand && isIndexFingerUp(rHand);
-
-      if (lUp && rUp) {
-        const dist = getDistance(lTip, rTip);
-        if (dist < 2000) { // ระยะอนันต์ (กว้างกว่าขอบจอ)
-          isActionActive = true; if(!activeActionType) activeActionType = 'LASER';
+        // เช็ค Black Flash (หมัด)
+        if (previousHandsPos.length > 0 && !isFusionState && !isPurpleState && !isLightningState) {
+            gestures.forEach(currHand => {
+                if (currHand.type === 'FIST') {
+                    const prevHand = previousHandsPos.find(p => p.label === currHand.label);
+                    if (prevHand) {
+                        const dist = Math.hypot(currHand.wrist.x - prevHand.x, currHand.wrist.y - prevHand.y);
+                        if (dist > width * 0.15) { 
+                            blackFlashFrames = 15; blackFlashPos = { x: currHand.landmarks[9].x * width, y: currHand.landmarks[9].y * height };
+                            shockwaves.push(new Shockwave(blackFlashPos.x, blackFlashPos.y, width*0.6, '255, 0, 0'));
+                        }
+                    }
+                }
+            });
         }
-      } else if (lHand && rHand && !lUp && !rUp) {
-        const dist = getDistance(lPalm, rPalm);
-        if (dist > 50 && dist < 1200) { // ระยะชาร์จบอลกว้างมาก
-          isActionActive = true; if(!activeActionType) activeActionType = 'VORTEX';
+        previousHandsPos = gestures.map(g => ({ label: g.label, x: g.wrist.x, y: g.wrist.y }));
+
+        // กล้องติดตาม
+        if (blackFlashFrames > 0) {
+            isDoingBlackFlash = true; targetZoom = 1.3; targetFocusX = blackFlashPos.x; targetFocusY = blackFlashPos.y;
         }
-      }
 
-      // --- วาดลำดับที่ 1: ออร่าคลุมร่าง (ถ้ามีการใช้พลัง) ---
-      if (isActionActive && results.poseLandmarks) {
-        drawBodyAura(results.poseLandmarks, w, h);
-      }
+        // ประมวลผลภาพ
+        canvasCtx.clearRect(0, 0, width, height);
+        currentZoom += (targetZoom - currentZoom) * 0.1;
+        currentFocusX += (targetFocusX - currentFocusX) * 0.1;
+        currentFocusY += (targetFocusY - currentFocusY) * 0.1;
 
-      // --- วาดลำดับที่ 2: ดวงตา ---
-      if (results.faceLandmarks) {
-        const face = results.faceLandmarks;
-        const leftEye = { x: face[159].x * w, y: face[159].y * h }; const rightEye = { x: face[386].x * w, y: face[386].y * h }; 
-        const drawEyeGlow = (pos) => {
-          const grad = canvasCtx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, 45);
-          grad.addColorStop(0, '#ffffff'); grad.addColorStop(0.2, currentMode==='MAGIC'?'#ff1177':'#00eeff'); grad.addColorStop(1, 'transparent');
-          canvasCtx.fillStyle = grad; canvasCtx.beginPath(); canvasCtx.arc(pos.x, pos.y, 45, 0, Math.PI*2); canvasCtx.fill();
-        };
-        drawEyeGlow(leftEye); drawEyeGlow(rightEye);
-      }
+        canvasCtx.save();
+        canvasCtx.translate(width/2, height/2);
+        canvasCtx.scale(currentZoom, currentZoom);
+        canvasCtx.translate(-currentFocusX, -currentFocusY);
+        canvasCtx.drawImage(results.image, 0, 0, width, height);
 
-      // --- วาดลำดับที่ 3: ปล่อยพลังอาวุธ ---
-      if (activeActionType === 'MOUTH' && mouthCenter) {
-        fireMouthBeam(mouthCenter.x, mouthCenter.y);
-      } 
-      else if (activeActionType === 'LASER') {
-        canvasElement.classList.add('shaking');
-        drawEpicLightning(lTip, rTip, 8); // เส้นหนาขึ้น
-      } 
-      else if (activeActionType === 'VORTEX') {
-        const dist = getDistance(lPalm, rPalm);
-        const midX = (lPalm.x + rPalm.x)/2; const midY = (lPalm.y + rPalm.y)/2;
-        const vortexSize = Math.max(50, 200 - (dist * 0.15)); // ลูกใหญ่ขึ้น
-        drawEnergyVortex(midX, midY, vortexSize);
-        drawEpicLightning(lPalm, {x: midX, y: midY}, 4);
-        drawEpicLightning(rPalm, {x: midX, y: midY}, 4);
-      }
+        // --- เริ่มวาดเอฟเฟกต์ ---
+        if (handsData.length === 0) {
+            setUI('mode-standby', 'SYSTEM: STANDBY', 'สถานะ: รอตรวจจับพลังงาน');
+        } else if (isDoingBlackFlash) {
+            mainContainer.classList.add('shake-active');
+            setUI('mode-blackflash', 'CRITICAL STRIKE: BLACK FLASH', 'สถานะ: โคคุเซ็น (ประกายแสงสีดำ)!');
+            drawBlackFlash(canvasCtx, blackFlashPos.x, blackFlashPos.y);
+        } else if (isPurpleState || isFusionState || isLightningState || isTempestState || isVoidState || isCosmicState) {
+            // โหมดผสานพลังทั้งหมด ควบคุมด้วยมือขวา (หน้าจอโชว์ซ้าย)
+            let controlHand = gestures.find(g => g.label === 'Left') || gestures[0]; 
+            
+            if (controlHand) {
+                const x = controlHand.landmarks[9].x * width;
+                const y = controlHand.landmarks[9].y * height;
+                const openVal = controlHand.openness; // ป้องกันบักพิมพ์ผิดตรงนี้!
+                
+                // คำนวณขนาดที่ "พอดี" (5% - 22% ของจอ ไม่ล้นเกินไป)
+                const minSize = width * 0.05;
+                const maxSize = width * 0.22; 
+                targetSize = minSize + (openVal * (maxSize - minSize));
+                currentSize += (targetSize - currentSize) * 0.15;
 
-      if (activeActionType !== 'MOUTH' && activeActionType !== 'LASER') {
-        canvasElement.classList.remove('shaking');
-      }
+                targetZoom = 1.0 + ((1.0 - openVal) * 0.4);
+                targetFocusX = x; targetFocusY = y;
 
-      canvasCtx.restore();
+                if (isPurpleState) {
+                    if (openVal < 0.3) {
+                        setUI('mode-mixed', 'MUGEN: SINGULARITY', 'สถานะ: บีบอัดมวลสารอนันต์ (กำหมัด)!');
+                        if(Math.random() > 0.6) mainContainer.classList.add('shake-active');
+                    } else if (openVal > 0.8) {
+                        setUI('mode-mixed', 'HOLLOW PURPLE: FIRE!', 'สถานะ: ปลดปล่อยมุเก็นสีม่วง (แบมือ)!');
+                        mainContainer.classList.add('shake-active'); 
+                        if(Math.random() > 0.8) shockwaves.push(new Shockwave(x, y, width*0.5, '200, 50, 255'));
+                    } else {
+                        setUI('mode-mixed', 'MUGEN: FUSION', 'สถานะ: ควบคุมขนาดมุเก็นด้วยการกำ/แบมือ');
+                    }
+                    drawHollowPurple(canvasCtx, x, y, currentSize, openVal);
+                } 
+                else if (isFusionState) {
+                    if (openVal < 0.3) {
+                        setUI('mode-fusion', 'OVERDRIVE: COMPRESSED', 'สถานะ: บีบอัดพลังงานขีดสุด (กำหมัด)!');
+                    } else if (openVal > 0.8) {
+                        setUI('mode-fusion', 'OVERDRIVE: MAX RELEASE', 'สถานะ: ปลดปล่อยพลังงานเต็มพิกัด (แบมือ)!');
+                        if(Math.random() > 0.5) mainContainer.classList.add('shake-active'); 
+                    } else {
+                        setUI('mode-fusion', 'OVERDRIVE: RED RASENGAN', 'สถานะ: ควบคุมขนาดพลังด้วยการกำ/แบมือ');
+                    }
+                    drawRasengan(canvasCtx, x, y, currentSize, true, openVal);
+                }
+                else if (isLightningState) {
+                    if (openVal < 0.3) {
+                        setUI('mode-lightning-fusion', 'RAIKIRI: CORE', 'สถานะ: ควบแน่นแกนสายฟ้า (กำหมัด)!');
+                        if(Math.random() > 0.5) mainContainer.classList.add('shake-active');
+                    } else if (openVal > 0.8) {
+                        setUI('mode-lightning-fusion', 'KIRIN: STORM RELEASE', 'สถานะ: ปลดปล่อยพายุสายฟ้า (แบมือ)!');
+                        mainContainer.classList.add('shake-active'); 
+                        if(Math.random() > 0.5) flashOverlay.style.opacity = '0.4';
+                    } else {
+                        setUI('mode-lightning-fusion', 'CHIDORI: FUSION', 'สถานะ: ควบคุมกระแสไฟฟ้าด้วยการกำ/แบมือ');
+                    }
+                    drawLightningFusion(canvasCtx, x, y, currentSize, openVal);
+                }
+                else if (isTempestState) {
+                    if (openVal < 0.3) {
+                        setUI('mode-tempest', 'TEMPEST: CALM EYE', 'สถานะ: บีบอัดพายุสายฟ้าในมือ (กำหมัด)!');
+                    } else if (openVal > 0.8) {
+                        setUI('mode-tempest', 'TEMPEST: HURRICANE', 'สถานะ: ระเบิดพายุคลั่ง (แบมือ)!');
+                        mainContainer.classList.add('shake-active'); 
+                    } else {
+                        setUI('mode-tempest', 'TEMPEST RASENGAN', 'สถานะ: พายุวงจักรสายฟ้า (แบมือ + 2 นิ้ว)');
+                    }
+                    drawTempest(canvasCtx, x, y, currentSize, openVal);
+                }
+                else if (isVoidState) {
+                    if (openVal < 0.3) {
+                        setUI('mode-void', 'VOID: SINGULARITY', 'สถานะ: หลุมดำสมบูรณ์ ดูดกลืนทุกสิ่ง (กำหมัด)!');
+                        if(Math.random() > 0.5) mainContainer.classList.add('shake-active');
+                    } else if (openVal > 0.8) {
+                        setUI('mode-void', 'VOID: QUASAR BURST', 'สถานะ: ระเบิดควอซาร์ผลักสสาร (แบมือ)!');
+                        mainContainer.classList.add('shake-active'); 
+                    } else {
+                        setUI('mode-void', 'VOID RASENGAN', 'สถานะ: หลุมดำมิติสูญญากาศ (แบมือ + 1 นิ้ว)');
+                    }
+                    drawVoid(canvasCtx, x, y, currentSize, openVal);
+                }
+                else if (isCosmicState) {
+                    if (openVal < 0.3) {
+                        setUI('mode-cosmic', 'COSMIC: OVERLOAD', 'สถานะ: พลาสม่าปั่นป่วนขั้นสุด (กำหมัด)!');
+                        if(Math.random() > 0.7) flashOverlay.style.opacity = '0.2';
+                    } else if (openVal > 0.8) {
+                        setUI('mode-cosmic', 'COSMIC: NEON NOVA', 'สถานะ: ระเบิดจักรวาลนีออน (แบมือ)!');
+                        mainContainer.classList.add('shake-active'); 
+                    } else {
+                        setUI('mode-cosmic', 'COSMIC LIGHTNING', 'สถานะ: อสนีบาตจักรวาลพลาสม่า (2 นิ้ว + 1 นิ้ว)');
+                    }
+                    drawCosmic(canvasCtx, x, y, currentSize, openVal);
+                }
+            }
+        } else {
+            // โหมดปกติ (แยกมือ)
+            let hasChidori = false;
+            gestures.forEach(g => {
+                if (g.type === 'UNKNOWN') return;
+                const x = g.landmarks[9].x * width;
+                const y = g.landmarks[9].y * height;
+                const size = Math.hypot(g.landmarks[0].x - g.landmarks[12].x, g.landmarks[0].y - g.landmarks[12].y) * width * 0.75;
+                const indexTipX = g.landmarks[8].x * width;
+                const indexTipY = g.landmarks[8].y * height;
+
+                if (g.type === 'SWORD') {
+                    hasChidori = true;
+                    if(gestures.length === 2) setUI('mode-chidori', 'LIGHTNING: READY', 'สถานะ: นำสองนิ้วมาชนกันเพื่อผสานสายฟ้า');
+                    else setUI('mode-chidori', 'LIGHTNING: CHIDORI', 'สถานะ: พันปักษา (สายฟ้าคำราม)!');
+                    drawLightning(canvasCtx, indexTipX, indexTipY);
+                    if(Math.random() > 0.7) flashOverlay.style.opacity = '0.3'; 
+                } else if (g.type === 'INDEX') {
+                    const type = g.label === 'Left' ? 'purple' : 'pink'; 
+                    if(gestures.length === 1) setUI(`mode-${type}`, `ENERGY: ${type.toUpperCase()} AURA`, 'สถานะ: พลังปลายนิ้ว (ชูอีกข้างเพื่อผสาน)');
+                    else setUI('mode-purple', 'ENERGY: DUAL FOCUS', 'สถานะ: นำปลายนิ้วมาชนกันเพื่อระเบิดพลังมุเก็น');
+                    drawIndexEnergy(canvasCtx, indexTipX, indexTipY, width * 0.05, type);
+                } else if (g.type === 'OPEN') {
+                    if(!hasChidori) setUI('mode-normal', 'RASENGAN: NORMAL', 'สถานะ: กระสุนวงจักรพื้นฐาน (ชนมือ 2 ข้างเพื่อผสาน)');
+                    drawRasengan(canvasCtx, x, y, size, false, 1.0);
+                } else if (g.type === 'FIST') {
+                    if(!hasChidori) setUI('mode-standby', 'FIST FOCUS', 'สถานะ: กำหมัดเตรียมปล่อยหมัด (ชกเร็วๆเพื่อโคคุเซ็น)');
+                }
+            });
+        }
+
+        shockwaves = shockwaves.filter(s => s.alpha > 0);
+        shockwaves.forEach(s => { s.update(); s.draw(canvasCtx); });
+        particles = particles.filter(p => p.life > 0);
+        particles.forEach(p => { p.update(); p.draw(canvasCtx); });
+        
+        if (blackFlashFrames > 0) blackFlashFrames--;
+
+        canvasCtx.restore();
     }
 
-    const holistic = new Holistic({locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/holistic/${f}`});
-    holistic.setOptions({ modelComplexity: 1, smoothLandmarks: true, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
-    holistic.onResults(onResults);
+    const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
+    hands.setOptions({ maxNumHands: 2, modelComplexity: 1, minDetectionConfidence: 0.7, minTrackingConfidence: 0.7 });
+    hands.onResults(onResults);
 
-    const camera = new Camera(videoElement, { onFrame: async () => { await holistic.send({image: videoElement}); }, width: 800, height: 600 });
-    camera.start();
-  </script>
+    const camera = new Camera(videoElement, {
+        onFrame: async () => { await hands.send({image: videoElement}); },
+        width: 1280, height: 720
+    });
+
+    window.onload = () => {
+        canvasElement.width = window.innerWidth;
+        canvasElement.height = window.innerHeight;
+        initCosmicStars();
+        camera.start().then(() => {
+            document.getElementById('loading').style.display = 'none';
+            uiOverlay.style.display = 'block';
+        }).catch((err) => {
+            document.getElementById('loading').innerHTML = `
+                <span style="color:#ff3333; text-shadow: 0 0 10px red;">❌ ระบบ AI ไม่สามารถเข้าถึงกล้องได้</span><br>
+                <span style="font-size: 16px; color:#ddd; font-weight: normal; line-height: 1.8;"><br>
+                <b>สาเหตุที่เป็นไปได้:</b><br>
+                1. รันไฟล์ .html โดยตรง (URL เป็น file:///) 👉 <b>ต้องใช้ Live Server ใน VS Code</b><br>
+                2. เบราว์เซอร์บล็อกกล้อง (คลิกที่รูป 🔒 มุมซ้ายบนของ URL แล้วเลือก Allow Camera)
+                </span>
+            `;
+            console.error("Camera Error:", err);
+        });
+    };
+    window.onresize = () => {
+        canvasElement.width = window.innerWidth;
+        canvasElement.height = window.innerHeight;
+        initCosmicStars(); 
+    };
+</script>
 
 </body>
 </html>
